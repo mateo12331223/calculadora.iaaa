@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1020">
+<title>Calculadora</title>
+<style>
+:root{color-scheme:dark;--bg:#080c17;--panel:#11182a;--panel2:#192239;--line:#28344f;--text:#f2f5ff;--muted:#93a0bb;--accent:#79e0bd;--orange:#ffad66}
+*{box-sizing:border-box}body{margin:0;min-height:100dvh;background:radial-gradient(ellipse at top,#17233c 0,#080c17 55%);font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;color:var(--text);display:grid;place-items:center;padding:18px}
+.app{width:min(100%,440px);background:rgba(15,22,39,.96);border:1px solid var(--line);border-radius:28px;padding:20px;box-shadow:0 24px 80px #0008}
+.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}.brand{font-size:14px;letter-spacing:.16em;font-weight:800;color:var(--muted)}.status{font-size:11px;color:var(--accent);border:1px solid #285b50;border-radius:99px;padding:6px 9px}
+.display{background:#090e1b;border:1px solid #1e2a42;border-radius:20px;min-height:132px;padding:18px 16px;display:flex;flex-direction:column;justify-content:flex-end;text-align:right;overflow:hidden;margin-bottom:15px}
+#expression{color:var(--muted);font-size:16px;min-height:25px;overflow-wrap:anywhere}#result{font-size:clamp(34px,9vw,48px);font-weight:650;letter-spacing:-.04em;overflow-wrap:anywhere}
+.keys{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+button{font:inherit;border:1px solid transparent;cursor:pointer;touch-action:manipulation;user-select:none;-webkit-user-select:none;transition:transform .08s,filter .15s}
+.key{height:61px;border-radius:17px;background:var(--panel2);color:var(--text);font-size:21px;font-weight:600}.key:active{transform:scale(.96);filter:brightness(1.25)}.function{background:#202c43;color:#b8c7e6}.operator{color:var(--orange);background:#30251f}.equals{background:var(--accent);color:#071b16;font-size:25px}.zero{grid-column:span 2}.hint{font-size:11px;color:#62708d;text-align:center;margin-top:15px;line-height:1.5}
+.chat{display:none;flex-direction:column;gap:12px}.chat.visible{display:flex}.calc.hidden{display:none}.chat-head{display:flex;align-items:center;justify-content:space-between}.chat-head h2{font-size:18px;margin:0}.small{border:1px solid var(--line);background:#1b263d;color:var(--text);border-radius:12px;padding:9px 12px}.messages{height:min(45dvh,400px);min-height:200px;overflow:auto;background:#090e1b;border:1px solid #1e2a42;border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:10px}.bubble{max-width:90%;white-space:pre-wrap;overflow-wrap:anywhere;padding:11px 13px;border-radius:15px;font-size:14px;line-height:1.45}.user{align-self:flex-end;background:#24483f}.assistant{align-self:flex-start;background:#1a253b}.composer{display:flex;gap:8px}.composer input{min-width:0;flex:1;background:#090e1b;border:1px solid var(--line);border-radius:14px;padding:13px;color:var(--text);font:inherit;outline:none}.send{background:var(--accent);color:#071b16;font-weight:800;border-radius:14px;padding:0 16px}.chat-note{font-size:11px;color:var(--muted);line-height:1.45}
+@media(max-width:380px){body{padding:8px}.app{padding:14px;border-radius:22px}.key{height:56px}.keys{gap:7px}}
+</style>
+</head>
+<body>
+<main class="app" aria-label="Calculadora">
+  <div class="top"><div class="brand">CALCULADORA</div><div class="status" id="status">LISTA</div></div>
+  <section class="calc" id="calc">
+    <div class="display" aria-live="polite"><div id="expression"></div><div id="result">0</div></div>
+    <div class="keys" id="keys">
+      <button class="key function" data-action="clear">AC</button><button class="key function" data-action="sign">+/−</button><button class="key function" data-action="percent">%</button><button class="key operator" data-op="/">÷</button>
+      <button class="key" data-digit="7">7</button><button class="key" data-digit="8">8</button><button class="key" data-digit="9">9</button><button class="key operator" data-op="*">×</button>
+      <button class="key" data-digit="4">4</button><button class="key" data-digit="5">5</button><button class="key" data-digit="6">6</button><button class="key operator" data-op="-">−</button>
+      <button class="key" data-digit="1">1</button><button class="key" data-digit="2">2</button><button class="key" data-digit="3">3</button><button class="key operator" data-op="+">+</button>
+      <button class="key zero" data-digit="0" id="zeroKey" aria-label="Cero, mantener pulsado para abrir asistente">0</button><button class="key" data-action="decimal">.</button><button class="key equals" data-action="equals">=</button>
+    </div>
+    <div class="hint">Calculadora básica · Historial de sesión<br>Consejo: mantené pulsado el botón 0 para abrir el asistente.</div>
+  </section>
+  <section class="chat" id="chat">
+    <div class="chat-head"><h2>Asistente</h2><button class="small" id="back">← Calculadora</button></div>
+    <div class="messages" id="messages" aria-live="polite"><div class="bubble assistant">¡Hola! Soy el asistente integrado. Preguntame lo que quieras.</div></div>
+    <form class="composer" id="chatForm"><input id="prompt" maxlength="4000" autocomplete="off" placeholder="Escribí tu pregunta…" aria-label="Pregunta para la IA"><button class="send" id="send" type="submit">Enviar</button></form>
+    <div class="chat-note">El chat necesita que configures el servidor y una clave de API. No pongas la clave en este archivo HTML.</div>
+  </section>
+</main>
+<script>
+const $=s=>document.querySelector(s), result=$('#result'), expression=$('#expression'), statusEl=$('#status');
+let current='0', stored=null, operator=null, replaceNext=false, history=[];
+function pretty(n){if(!Number.isFinite(n))return 'Error';return String(Number.parseFloat(n.toPrecision(12)))}
+function paint(){result.textContent=current;expression.textContent=history.length?history[history.length-1]:''}
+function digit(d){if(replaceNext){current=d;replaceNext=false}else if(current==='0')current=d;else if(current.length<18)current+=d;paint()}
+function clear(){current='0';stored=null;operator=null;replaceNext=false;expression.textContent='';paint()}
+function chooseOp(op){const n=Number(current);if(operator&& !replaceNext) calculate(false);stored=Number(current);operator=op;replaceNext=true;expression.textContent=pretty(stored)+' '+symbol(op);paint()}
+function symbol(op){return ({'+':'+','-':'−','*':'×','/':'÷'})[op]||op}
+function calculate(show=true){if(operator===null||stored===null)return;const a=stored,b=Number(current);let v;if(operator==='+')v=a+b;else if(operator==='-')v=a-b;else if(operator==='*')v=a*b;else if(operator==='/')v=b===0?NaN:a/b;const old=pretty(a)+' '+symbol(operator)+' '+pretty(b)+' =';current=pretty(v);history.push(old);if(history.length>20)history.shift();expression.textContent=show?old:'';stored=null;operator=null;replaceNext=true;paint()}
+function action(a){if(a==='clear')clear();if(a==='sign')current=pretty(-Number(current));if(a==='percent')current=pretty(Number(current)/100);if(a==='decimal'&&!current.includes('.'))current+='.';if(a==='equals')calculate(true);paint()}
+$('#keys').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.digit!==undefined)digit(b.dataset.digit);else if(b.dataset.op)chooseOp(b.dataset.op);else if(b.dataset.action)action(b.dataset.action)});
+document.addEventListener('keydown',e=>{if(!$('#chat').classList.contains('visible')){if(/^[0-9]$/.test(e.key))digit(e.key);else if(e.key==='.')action('decimal');else if(['+','-','*','/'].includes(e.key))chooseOp(e.key);else if(e.key==='Enter'||e.key==='=')calculate(true);else if(e.key==='Escape')clear();else if(e.key==='%')action('percent')}});
+const zero=$('#zeroKey');let holdTimer=null, holdTriggered=false;
+function startHold(e){if(e.type==='mousedown'&&e.button!==0)return;holdTriggered=false;holdTimer=setTimeout(()=>{holdTriggered=true;openChat()},1000)}
+function endHold(){if(holdTimer)clearTimeout(holdTimer);holdTimer=null}
+zero.addEventListener('pointerdown',startHold);['pointerup','pointercancel','pointerleave'].forEach(ev=>zero.addEventListener(ev,endHold));
+zero.addEventListener('click',e=>{if(holdTriggered){e.preventDefault();e.stopImmediatePropagation();holdTriggered=false}},true);
+function openChat(){$('#calc').classList.add('hidden');$('#chat').classList.add('visible');statusEl.textContent='ASISTENTE';setTimeout(()=>$('#prompt').focus(),100)}
+function closeChat(){$('#chat').classList.remove('visible');$('#calc').classList.remove('hidden');statusEl.textContent='LISTA'}
+$('#back').addEventListener('click',closeChat);
+function addBubble(text,who){const div=document.createElement('div');div.className='bubble '+who;div.textContent=text;$('#messages').appendChild(div);$('#messages').scrollTop=$('#messages').scrollHeight;return div}
+$('#chatForm').addEventListener('submit',async e=>{e.preventDefault();const input=$('#prompt'),text=input.value.trim();if(!text)return;addBubble(text,'user');input.value='';const pending=addBubble('Pensando…','assistant');$('#send').disabled=true;
+try{const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text})});const data=await r.json();if(!r.ok)throw new Error(data.error||'No se pudo conectar con la IA.');pending.textContent=data.reply||'No llegó una respuesta.'}
+catch(err){pending.textContent='No pude conectar con la IA: '+err.message+'\n\nAsegurate de ejecutar el servidor y configurar OPENAI_API_KEY.'}
+finally{$('#send').disabled=false;input.focus();$('#messages').scrollTop=$('#messages').scrollHeight}
+});
+</script>
+</body>
+</html>
